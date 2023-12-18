@@ -1,0 +1,125 @@
+{
+  "task": "CDiffMR_FastMRIKneePD_m.0.4.s2.ksu.cran.LogSR.d.1.0.cplx.2ch_DEBUG"    // task name
+  , "model": "cdiffmr_m.0.4.ksu"    // find keywords in ./models/select_model.py
+  , "mask": "fMRI_Ran_AF4_CF0.08_PE320"   // find keywords in ./models/select_mask.py
+  , "gpu_ids": [0, 1]
+  , "dist": false   // distributed computing
+  , "n_channels": 1    // 1 for grayscale, 3 for color
+  , "use_pretrain_weight": null // "enc" or 'all" or "no"
+  , "manual_seed": 42
+  , "path": {
+    "root": "mri_recon_dm"
+    , "pretrained_net_model_DM": null      // path of pretrained model
+    , "pretrained_net_model_EMA": null      // path of pretrained model
+  }
+  , "wandb": {
+    "mode": "disabled"  // "offline", "online", "disabled"
+    , "project_name": "MRI_Recon-CDiffMR"
+    , "is_sweep": false
+    , "sweep_num_agent": null
+    , "sweep_configuration": null
+  }
+  , "datasets": {
+    "train": {
+      "name": "train_dataset"
+      , "dataset_type": "fastmri.d.1.0.complex"
+      , "dataroot_H": "[PATH TO TRAIN DATASET]"    // path of H training dataset
+      , "mask": "fMRI_Ran_AF4_CF0.08_PE320"   // find keywords in ./models/select_mask.py
+      , "H_size": 320    // patch number for traning stage (randomly crop), set 256 to cancel randomly crop
+      , "sigma": 15
+      , "sigma_test": 15
+      , "is_noise": false    // add noise in k-space
+      , "noise_level": 0.0    // NL = S/(S+N)
+      , "noise_var": 0.1
+      , "is_mini_dataset": false   // for debug
+      , "mini_dataset_prec": 1    // CC 4700 total
+      , "dataloader_shuffle": true
+      , "dataloader_num_workers": 2
+      , "dataloader_batch_size": 2
+      , "pixel_range": "complex"
+      , "is_augmentation": false
+      , "complex_type": "2ch"
+    }
+    , "test": {
+      "name": "test_dataset"
+      , "dataset_type": "fastmri.d.1.0.complex"
+      , "dataroot_H": "[PATH TO TEST DATASET]"    // path of H testing dataset
+      , "mask": "fMRI_Ran_AF4_CF0.08_PE320"   // find keywords in ./models/select_mask.py
+      , "sigma": 15
+      , "sigma_test": 15
+      , "is_noise": false    // add noise in k-space
+      , "noise_level": 0.0    // NL = S/(S+N)
+      , "noise_var": 0.1
+      , "pixel_range": "complex"
+      , "complex_type": "2ch"
+    }
+  }
+
+
+  , "denoise_fn": {
+    "net_type": "cdiffmr_unet2"
+    , "in_channels": 2
+    , "out_channels": 2
+    , "resolution": 320
+    , "emb_channels": 128
+    , "img_range": 1.0
+    , "emb_channels_multi": [1, 2, 2, 2]
+    , "num_res_blocks": 2
+    , "attn_resolutions": [16]
+    , "dropout": 0.1
+    , "resamp_with_conv": true
+    , "init_type": "default"
+    , "init_bn_type": "default"
+    , "init_gain": 1
+    , "condition": {
+      "is_dc": false,
+      "is_concat": false,
+      "is_add": false
+    }
+
+  }
+
+  , "diffusion": {
+    "diffusion_type": "cold_diffusion_ksu"
+    , "time_step": 100
+    , "sampling_routine": "x0_step_down"  // "x0_step_down" or "ddim"
+    , "degradation": {
+      "ksu_routine": "LogSamplingRate"
+      , "ksu_mask_type": "cartesian_random" // "cartesian_regular", "cartesian_random"
+      , "pe": 320
+      , "fe": 320
+    }
+
+}
+  , "train": {
+    "lossfn_type": "l1"    // "l1" | "l2sum" | "l2" | "ssim" | "charbonnier" preferred
+    , "lossfn_weight": 1.0    // default 1.0
+    , "charbonnier_eps": null    // default 1e-9
+    , "alpha": 1    // default 15
+    , "beta": null    // default 0.1
+    , "gamma": null    // default 0.0025
+    , "E_decay": 0.995    // Exponential Moving Average for netG: set 0 to disable; default setting 0.999
+    , "model_DM_optimizer_type": "adam"    // fixed, adam is enough
+    , "model_DM_optimizer_lr": 2e-5    // learning rate default 2e-4
+    , "model_DM_optimizer_wd": 0    // weight decay, default 0
+    , "model_DM_optimizer_clipgrad": null
+    , "model_DM_optimizer_reuse": true
+
+    , "model_DM_scheduler_type": "MultiStepLR"
+    , "model_DM_scheduler_milestones": [10000000, 20000000]
+    , "model_DM_scheduler_gamma": 0.1
+
+    , "model_DM_regularizer_orthstep": null
+    , "model_DM_regularizer_clipstep": null
+
+    , "model_DM_param_strict": true
+    , "model_EMA_param_strict": true
+
+    , "model_DM_gradient_accumulation_every": 4
+
+    , "checkpoint_test": 10    // for testing 10000
+    , "checkpoint_save": 10    // for saving model 10000
+    , "checkpoint_print": 10   // for print 200
+    , "is_early_stopping": false
+  }
+}

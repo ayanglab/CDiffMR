@@ -1,3 +1,3 @@
 # CDiffMR
 
-This is the official Github Repo for CDiffMR
+This is a repository for CDiffMR.
